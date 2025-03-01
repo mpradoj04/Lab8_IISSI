@@ -1,4 +1,4 @@
-import { get, post } from './helpers/ApiRequestsHelper'
+import { get, post, destroy, put } from './helpers/ApiRequestsHelper'
 
 function getDetail (id) {
   return get(`products/${id}`)
@@ -12,4 +12,12 @@ function create (data) {
   return post('/products/', data)
 }
 
-export { getDetail, getProductCategories, create }
+function remove (id) {
+  return destroy(`products/${id}`)
+}
+
+function update (id, data) {
+  return put(`products/${id}`, data)
+}
+
+export { getDetail, getProductCategories, create, remove, update }

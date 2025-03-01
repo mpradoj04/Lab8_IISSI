@@ -4,12 +4,11 @@ import * as ExpoImagePicker from 'expo-image-picker'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as yup from 'yup'
 import DropDownPicker from 'react-native-dropdown-picker'
-import { getRestaurantCategories, getDetail, update } from '../../api/RestaurantEndpoints'
+import { getProductCategories, getDetail, update } from '../../api/ProductEndpoints'
 import InputItem from '../../components/InputItem'
 import TextRegular from '../../components/TextRegular'
 import * as GlobalStyles from '../../styles/GlobalStyles'
-import restaurantLogo from '../../../assets/restaurantLogo.jpeg'
-import restaurantBackground from '../../../assets/restaurantBackground.jpeg'
+import productImage from '../../../assets/product.jpeg'
 import { showMessage } from 'react-native-flash-message'
 import { ErrorMessage, Formik } from 'formik'
 import TextError from '../../components/TextError'
@@ -18,78 +17,73 @@ import { buildInitialValues } from '../Helper'
 
 export default function EditRestaurantScreen ({ navigation, route }) {
   const [open, setOpen] = useState(false)
-  const [restaurantCategories, setRestaurantCategories] = useState([])
+  const [productCategories, setProductCategories] = useState([])
   const [backendErrors, setBackendErrors] = useState()
-  const [restaurant, setRestaurant] = useState({})
-  const [initialRestaurantValues, setInitialRestaurantValues] = useState({ name: null, description: null, address: null, postalCode: null, url: null, shippingCosts: null, email: null, phone: null, restaurantCategoryId: null, logo: null, heroImage: null })
+  const [product, setProduct] = useState({})
+  const [initialProductValues, setInitialProductValues] = useState({ name: null, description: null, price: null, order: null, availability: null, restaurantId: product.restaurantId, productCategoryId: null, image: null })
 
   const validationSchema = yup.object().shape({
     name: yup
       .string()
       .max(255, 'Name too long')
       .required('Name is required'),
-    address: yup
+    description: yup
       .string()
-      .max(255, 'Address too long')
-      .required('Address is required'),
-    postalCode: yup
-      .string()
-      .max(255, 'Postal code too long')
-      .required('Postal code is required'),
-    url: yup
-      .string()
-      .nullable()
-      .url('Please enter a valid url'),
-    shippingCosts: yup
+      .max(255, 'Description too long'),
+    price: yup
       .number()
-      .positive('Please provide a valid shipping cost value')
-      .required('Shipping costs value is required'),
-    email: yup
-      .string()
-      .nullable()
-      .email('Please enter a valid email'),
-    phone: yup
-      .string()
-      .nullable()
-      .max(255, 'Phone too long'),
-    restaurantCategoryId: yup
+      .positive('Please provide a valid price for the product')
+      .required('Price is required'),
+    order: yup
+      .number()
+      .positive('Please provide a order value')
+      .integer(),
+    availability: yup
+      .boolean()
+      .required('Availability value is required'),
+    restaurantId: yup
       .number()
       .positive()
       .integer()
-      .required('Restaurant category is required')
+      .required('Restaurant id is required'),
+    productCategoryId: yup
+      .number()
+      .positive()
+      .integer()
+      .required('Product category is required')
   })
 
   useEffect(() => {
-    async function fetchRestaurantDetail () {
+    async function fetchProductDetail () {
       try {
-        const fetchedRestaurant = await getDetail(route.params.id)
-        const preparedRestaurant = prepareEntityImages(fetchedRestaurant, ['logo', 'heroImage'])
-        setRestaurant(preparedRestaurant)
-        const initialValues = buildInitialValues(preparedRestaurant, initialRestaurantValues)
-        setInitialRestaurantValues(initialValues)
+        const fetchedProduct = await getDetail(route.params.id)
+        const preparedProduct = prepareEntityImages(fetchedProduct, ['image'])
+        setProduct(fetchedProduct)
+        const initialValues = buildInitialValues(fetchedProduct, initialProductValues)
+        setInitialProductValues(initialValues)
       } catch (error) {
         showMessage({
-          message: `There was an error while retrieving restaurant details (id ${route.params.id}). ${error}`,
+          message: `There was an error while retrieving product details (id ${route.params.id}). ${error}`,
           type: 'error',
           style: GlobalStyles.flashStyle,
           titleStyle: GlobalStyles.flashTextStyle
         })
       }
     }
-    fetchRestaurantDetail()
+    fetchProductDetail()
   }, [route])
 
   useEffect(() => {
-    async function fetchRestaurantCategories () {
+    async function fetchProductCategories () {
       try {
-        const fetchedRestaurantCategories = await getRestaurantCategories()
-        const fetchedRestaurantCategoriesReshaped = fetchedRestaurantCategories.map((e) => {
+        const fetchedProductCategories = await getProductCategories()
+        const fetchedProductCategoriesReshaped = fetchedProductCategories.map((e) => {
           return {
             label: e.name,
             value: e.id
           }
         })
-        setRestaurantCategories(fetchedRestaurantCategoriesReshaped)
+        setProductCategories(fetchedProductCategoriesReshaped)
       } catch (error) {
         showMessage({
           message: `There was an error while retrieving restaurant categories. ${error} `,
@@ -99,7 +93,7 @@ export default function EditRestaurantScreen ({ navigation, route }) {
         })
       }
     }
-    fetchRestaurantCategories()
+    fetchProductCategories()
   }, [])
 
   useEffect(() => {
@@ -127,17 +121,17 @@ export default function EditRestaurantScreen ({ navigation, route }) {
     }
   }
 
-  const updateRestaurant = async (values) => {
+  const updateProduct = async (values) => {
     setBackendErrors([])
     try {
-      const updatedRestaurant = await update(restaurant.id, values)
+      const updatedProduct = await update(product.id, values)
       showMessage({
-        message: `Restaurant ${updatedRestaurant.name} succesfully updated`,
+        message: `Product ${updatedProduct.name} succesfully updated`,
         type: 'success',
         style: GlobalStyles.flashStyle,
         titleStyle: GlobalStyles.flashTextStyle
       })
-      navigation.navigate('RestaurantsScreen', { dirty: true })
+      navigation.navigate('RestaurantDetailScreen', { dirty: true })
     } catch (error) {
       console.log(error)
       setBackendErrors(error.errors)
@@ -148,8 +142,8 @@ export default function EditRestaurantScreen ({ navigation, route }) {
     <Formik
       validationSchema={validationSchema}
       enableReinitialize
-      initialValues={initialRestaurantValues}
-      onSubmit={updateRestaurant}
+      initialValues={initialProductValues}
+      onSubmit={updateProduct}
       >
       {({ handleSubmit, setFieldValue, values }) => (
         <ScrollView>
@@ -164,70 +158,41 @@ export default function EditRestaurantScreen ({ navigation, route }) {
                 label='Description:'
               />
               <InputItem
-                name='address'
-                label='Address:'
+                name='price'
+                label='Price:'
               />
               <InputItem
-                name='postalCode'
-                label='Postal code:'
-              />
-              <InputItem
-                name='url'
-                label='Url:'
-              />
-              <InputItem
-                name='shippingCosts'
-                label='Shipping costs:'
-              />
-              <InputItem
-                name='email'
-                label='Email:'
-              />
-              <InputItem
-                name='phone'
-                label='Phone:'
+                name='availability'
+                label='Availability:'
               />
 
               <DropDownPicker
                 open={open}
-                value={values.restaurantCategoryId}
-                items={restaurantCategories}
+                value={values.productCategoryId}
+                items={productCategories}
                 setOpen={setOpen}
                 onSelectItem={ item => {
-                  setFieldValue('restaurantCategoryId', item.value)
+                  setFieldValue('productCategoryId', item.value)
                 }}
-                setItems={setRestaurantCategories}
-                placeholder="Select the restaurant category"
+                setItems={setProductCategories}
+                placeholder="Select the product category"
                 containerStyle={{ height: 40, marginTop: 20 }}
                 style={{ backgroundColor: GlobalStyles.brandBackground }}
                 dropDownStyle={{ backgroundColor: '#fafafa' }}
               />
-              <ErrorMessage name={'restaurantCategoryId'} render={msg => <TextError>{msg}</TextError> }/>
+              <ErrorMessage name={'productCategoryId'} render={msg => <TextError>{msg}</TextError> }/>
 
               <Pressable onPress={() =>
                 pickImage(
                   async result => {
-                    await setFieldValue('logo', result)
+                    await setFieldValue('image', result)
                   }
                 )
               }
                 style={styles.imagePicker}
               >
-                <TextRegular>Logo: </TextRegular>
-                <Image style={styles.image} source={values.logo ? { uri: values.logo.assets[0].uri } : restaurantLogo} />
-              </Pressable>
-
-              <Pressable onPress={() =>
-                pickImage(
-                  async result => {
-                    await setFieldValue('heroImage', result)
-                  }
-                )
-              }
-                style={styles.imagePicker}
-              >
-                <TextRegular>Hero image: </TextRegular>
-                <Image style={styles.image} source={values.heroImage ? { uri: values.heroImage.assets[0].uri } : restaurantBackground} />
+                <TextRegular>Image: </TextRegular>
+                <Image style={styles.image} source={values.image ? { uri: values.image.assets[0].uri } : productImage} />
               </Pressable>
 
               {backendErrors &&
